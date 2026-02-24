@@ -1,6 +1,7 @@
 services:
   trigger:
     image: 'ghcr.io/triggerdotdev/trigger.dev:v4.3.0'
+    restart: unless-stopped
     user: root
     command: "sh -c \"chown -R node:node /home/node/shared && exec ./scripts/entrypoint.sh\"\n"
     environment:
@@ -41,7 +42,7 @@ services:
       - 'DEFAULT_ENV_EXECUTION_CONCURRENCY_LIMIT=${DEFAULT_ENV_EXECUTION_CONCURRENCY_LIMIT:-100}'
       - 'AUTH_GITHUB_CLIENT_ID=${AUTH_GITHUB_CLIENT_ID:-}'
       - 'AUTH_GITHUB_CLIENT_SECRET=${AUTH_GITHUB_CLIENT_SECRET:-}'
-      - 'EMAIL_TRANSPORT=${EMAIL_TRANSPORT:-smtp}'
+      - 'EMAIL_TRANSPORT=${EMAIL_TRANSPORT:-resend}'
       - 'RESEND_API_KEY=${RESEND_API_KEY}'
       - 'SMTP_HOST=${SMTP_HOST}'
       - 'SMTP_PORT=${SMTP_PORT}'
@@ -76,8 +77,11 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+    networks:
+      - coolify
   supervisor:
     image: 'ghcr.io/triggerdotdev/supervisor:v4.3.0'
+    restart: unless-stopped
     user: root
     command: "sh -c \"chown -R node:node /home/node/shared && exec /usr/bin/dumb-init -- pnpm run --filter supervisor start\"\n"
     environment:
@@ -112,8 +116,11 @@ services:
         condition: service_healthy
       docker-proxy:
         condition: service_healthy
+    networks:
+      - coolify
   docker-proxy:
     image: 'tecnativa/docker-socket-proxy:v0.4.2'
+    restart: unless-stopped
     volumes:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
     environment:
@@ -132,8 +139,11 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+    networks:
+      - coolify
   postgresql:
     image: 'postgres:16-alpine'
+    restart: unless-stopped
     command:
       - '-c'
       - wal_level=logical
@@ -150,8 +160,11 @@ services:
       interval: 5s
       timeout: 20s
       retries: 10
+    networks:
+      - coolify
   redis:
     image: 'redis:7-alpine'
+    restart: unless-stopped
     volumes:
       - 'redis-data:/data'
     healthcheck:
@@ -162,8 +175,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - coolify
   electric:
     image: 'electricsql/electric:1.2.9'
+    restart: unless-stopped
     environment:
       - 'DATABASE_URL=postgresql://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgresql:5432/${POSTGRES_DB:-trigger-db}?sslmode=disable'
       - 'ELECTRIC_SECRET=${SERVICE_PASSWORD_64_ELECTRIC}'
@@ -180,8 +196,11 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    networks:
+      - coolify
   clickhouse:
     image: 'clickhouse/clickhouse-server:25.8'
+    restart: unless-stopped
     environment:
       - 'CLICKHOUSE_USER=${SERVICE_USER_CLICKHOUSE}'
       - 'CLICKHOUSE_PASSWORD=${SERVICE_PASSWORD_64_CLICKHOUSE}'
@@ -196,3 +215,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - coolify
+volumes:
+  shared-data: null
+  postgresql-data: null
+  redis-data: null
+  clickhouse-data: null
+  clickhouse-logs: null
+networks:
+  coolify:
+    external: true

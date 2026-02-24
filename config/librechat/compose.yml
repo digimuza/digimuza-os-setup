@@ -1,6 +1,7 @@
 services:
   librechat:
     image: 'ghcr.io/danny-avila/librechat-dev-api:latest'
+    restart: unless-stopped
     environment:
       - SERVICE_URL_LIBRECHAT_3080
       - 'DOMAIN_CLIENT=${SERVICE_URL_LIBRECHAT}'
@@ -29,7 +30,7 @@ services:
       - 'ASSISTANTS_API_KEY=${SERVICE_ASSISTANTS_API_KEY:-user_provided}'
       - 'DEBUG_LOGGING=${DEBUG_LOGGING:-false}'
       - 'DEBUG_OPENAI=${DEBUG_OPENAI:-false}'
-      - 'DEBUG_PLUGINS=${DEBUG_OPENAI:-false}'
+      - 'DEBUG_PLUGINS=${DEBUG_PLUGINS:-false}'
       - 'NO_INDEX=${NO_INDEX:-true}'
     volumes:
       - 'librechat-images:/app/client/public/images'
@@ -59,8 +60,11 @@ services:
       interval: 5s
       timeout: 10s
       retries: 5
+    networks:
+      - coolify
   mongodb:
     image: 'mongo:8'
+    restart: unless-stopped
     environment:
       - 'MONGO_INITDB_ROOT_USERNAME=${SERVICE_USER_MONGO}'
       - 'MONGO_INITDB_ROOT_PASSWORD=${SERVICE_PASSWORD_MONGO}'
@@ -77,8 +81,11 @@ services:
       interval: 5s
       timeout: 10s
       retries: 3
+    networks:
+      - coolify
   meilisearch:
     image: 'getmeili/meilisearch:v1.12.3'
+    restart: unless-stopped
     environment:
       - 'MEILI_MASTER_KEY=${SERVICE_PASSWORD_MEILI}'
       - 'MEILI_NO_ANALYTICS=${MEILI_NO_ANALYTICS:-false}'
@@ -95,8 +102,11 @@ services:
       interval: 2s
       timeout: 10s
       retries: 15
+    networks:
+      - coolify
   vectordb:
     image: 'ankane/pgvector:latest'
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=rag
       - 'POSTGRES_USER=${SERVICE_USER_POSTGRES}'
@@ -116,8 +126,11 @@ services:
       timeout: 1m
       retries: 5
       start_period: 10s
+    networks:
+      - coolify
   rag-api:
     image: 'ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest'
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=rag
       - 'POSTGRES_USER=${SERVICE_USER_POSTGRES}'
@@ -140,3 +153,15 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
+    networks:
+      - coolify
+volumes:
+  librechat-images: null
+  librechat-logs: null
+  librechat-uploads: null
+  mongodb-data: null
+  meilisearch-data: null
+  vectordb-data: null
+networks:
+  coolify:
+    external: true

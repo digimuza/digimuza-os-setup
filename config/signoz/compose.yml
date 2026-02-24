@@ -11,8 +11,11 @@ services:
       options:
         max-size: 50m
         max-file: '3'
+    networks:
+      - coolify
   zookeeper:
     image: 'signoz/zookeeper:3.9.3'
+    restart: unless-stopped
     user: root
     healthcheck:
       test:
@@ -32,8 +35,11 @@ services:
       - 'ZOO_AUTOPURGE_INTERVAL=${ZOO_AUTOPURGE_INTERVAL:-1}'
       - 'ZOO_ENABLE_PROMETHEUS_METRICS=${ZOO_ENABLE_PROMETHEUS_METRICS:-yes}'
       - 'ZOO_PROMETHEUS_METRICS_PORT_NUMBER=${ZOO_PROMETHEUS_METRICS_PORT_NUMBER:-9141}'
+    networks:
+      - coolify
   clickhouse:
     image: 'clickhouse/clickhouse-server:25.5.6-alpine'
+    restart: unless-stopped
     tty: true
     depends_on:
       init-clickhouse:
@@ -82,8 +88,11 @@ services:
         type: bind
         source: ./clickhouse/config.xml
         target: /etc/clickhouse-server/config.xml
+    networks:
+      - coolify
   signoz:
     image: 'signoz/signoz:v0.97.1'
+    restart: unless-stopped
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -135,8 +144,11 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    networks:
+      - coolify
   otel-collector:
     image: 'signoz/signoz-otel-collector:v0.129.7'
+    restart: unless-stopped
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -171,6 +183,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    networks:
+      - coolify
   schema-migrator-sync:
     image: 'signoz/signoz-schema-migrator:v0.129.7'
     command:
@@ -186,6 +200,8 @@ services:
       options:
         max-size: 50m
         max-file: '3'
+    networks:
+      - coolify
   schema-migrator-async:
     image: 'signoz/signoz-schema-migrator:v0.129.7'
     depends_on:
@@ -203,3 +219,12 @@ services:
       - async
       - '--dsn=tcp://clickhouse:9000'
       - '--up='
+    networks:
+      - coolify
+volumes:
+  zookeeper: null
+  clickhouse: null
+  sqlite: null
+networks:
+  coolify:
+    external: true

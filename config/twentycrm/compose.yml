@@ -1,6 +1,7 @@
 services:
   twenty:
     image: 'twentycrm/twenty:v1.15'
+    restart: unless-stopped
     environment:
       - SERVICE_URL_TWENTY_3000
       - 'SERVER_URL=${SERVICE_URL_TWENTY}'
@@ -27,7 +28,7 @@ services:
       - EMAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
       - EMAIL_FROM_NAME=$EMAIL_FROM_NAME
       - EMAIL_SYSTEM_ADDRESS=$EMAIL_SYSTEM_ADDRESS
-      - 'EMAIL_DRIVER=${EMAIL_DRIVER:-logger}'
+      - 'EMAIL_DRIVER=${EMAIL_DRIVER:-smtp}'
       - EMAIL_SMTP_HOST=$EMAIL_SMTP_HOST
       - EMAIL_SMTP_PORT=$EMAIL_SMTP_PORT
       - EMAIL_SMTP_USER=$EMAIL_SMTP_USER
@@ -50,8 +51,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - coolify
   worker:
     image: 'twentycrm/twenty:v1.15'
+    restart: unless-stopped
     command:
       - yarn
       - 'worker:prod'
@@ -83,7 +87,7 @@ services:
       - EMAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
       - EMAIL_FROM_NAME=$EMAIL_FROM_NAME
       - EMAIL_SYSTEM_ADDRESS=$EMAIL_SYSTEM_ADDRESS
-      - 'EMAIL_DRIVER=${EMAIL_DRIVER:-logger}'
+      - 'EMAIL_DRIVER=${EMAIL_DRIVER:-smtp}'
       - EMAIL_SMTP_HOST=$EMAIL_SMTP_HOST
       - EMAIL_SMTP_PORT=$EMAIL_SMTP_PORT
       - EMAIL_SMTP_USER=$EMAIL_SMTP_USER
@@ -96,8 +100,11 @@ services:
     depends_on:
       twenty:
         condition: service_healthy
+    networks:
+      - coolify
   postgres:
     image: 'postgres:16-alpine'
+    restart: unless-stopped
     environment:
       - 'POSTGRES_USER=${SERVICE_USER_POSTGRES}'
       - 'POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}'
@@ -111,8 +118,11 @@ services:
       interval: 5s
       timeout: 20s
       retries: 10
+    networks:
+      - coolify
   redis:
     image: 'redis:7-alpine'
+    restart: unless-stopped
     volumes:
       - 'redis-data:/data'
     healthcheck:
@@ -123,3 +133,12 @@ services:
       interval: 5s
       timeout: 20s
       retries: 10
+    networks:
+      - coolify
+volumes:
+  twenty-local-storage: null
+  postgres-data: null
+  redis-data: null
+networks:
+  coolify:
+    external: true
