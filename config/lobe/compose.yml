@@ -38,6 +38,12 @@ services:
         condition: service_healthy
       bucket-init:
         condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3210/ -o /dev/null || exit 1']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     restart: always
     networks:
       - coolify
@@ -97,6 +103,12 @@ services:
       - './searxng-settings.yml:/etc/searxng/settings.yml'
     environment:
       - SEARXNG_SETTINGS_FILE=/etc/searxng/settings.yml
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:8080/ || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     restart: always
     networks:
       - coolify
