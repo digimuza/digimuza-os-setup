@@ -1,0 +1,4 @@
+use_default_settings: true
+server:
+    secret_key: "ynDvDJHwfJt4sKdrL7Dhe92HTfNYGxfH"   # change this!
+    bind_address: "[::]"
